@@ -2,7 +2,7 @@ const ParkingSlot = require("../models/ParkingSlot");
 
 const getSlots = async (req, res, next) => {
     try {
-        const slots = (await ParkingSlot.find()).sort({ label: 1 });
+        const slots = await ParkingSlot.find().sort({ label: 1 });
         res.json(slots);
     }catch (error) {
         next(error);

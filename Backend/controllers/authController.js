@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 
-const generateToken = (user) => {
+const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN,
     });
@@ -9,7 +9,8 @@ const generateToken = (user) => {
 
 const register = async (req, res, next) => {
     try {
-        const {name, email, password} = req.body;
+        const { name, password } = req.body;
+        const email = emailFromRequest(req);
 
         if (!name || !email || !password) {
             res.status(400);
@@ -37,7 +38,8 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
     try {
-        const { email, password } = req.body;
+        const { password } = req.body;
+        const email = emailFromRequest(req);
 
         if (!email || !password) {
             res.status(400);
@@ -60,5 +62,7 @@ const login = async (req, res, next) => {
         next(error);
     }
 };
+
+const emailFromRequest = (req) => String(req.body.email || "").trim().toLowerCase();
 
 module.exports = { register, login };
