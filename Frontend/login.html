@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in — Giza Parking Live</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="brand">
+      <span class="brand-mark">GIZA<span> PARKING</span></span>
+      <span class="brand-sub">Operations center</span>
+    </div>
+
+    <h1>Log in</h1>
+    <p class="lead">Sign in to access Giza’s live parking operations center.</p>
+
+    <div id="formMsg" class="form-msg error" hidden></div>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="email" required />
+        <div class="field-error" id="emailError" hidden></div>
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+        <div class="field-error" id="passwordError" hidden></div>
+      </div>
+
+      <button type="submit" class="btn-primary" id="submitBtn">Log in</button>
+    </form>
+
+    <p class="auth-switch">No account yet? <a href="register.html">Register</a></p>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

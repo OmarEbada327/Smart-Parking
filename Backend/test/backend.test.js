@@ -3,6 +3,8 @@ const test = require("node:test");
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const path = require("node:path");
+const fs = require("node:fs/promises");
 
 process.env.JWT_SECRET = "test-secret";
 process.env.JWT_EXPIRES_IN = "1h";
@@ -13,8 +15,9 @@ const { notFound, errorHandler } = require("../middleware/errorHandler");
 const User = require("../models/user");
 const ParkingSlot = require("../models/ParkingSlot");
 const { register, login } = require("../controllers/authController");
-const { getSlots, createSlot, updateSlotStatus } = require("../controllers/parkingController");
+const { getSlots, createSlot, updateSlotStatus, reserveSlot } = require("../controllers/parkingController");
 const connectDB = require("../db/db");
+const { DEFAULT_ADMIN_CREDENTIALS } = require("../seed/seed");
 
 const response = () => ({
     statusCode: 200,
@@ -34,6 +37,16 @@ test("hashing hashes and verifies passwords", async () => {
     assert.notEqual(hash, "secret12");
     assert.equal(await comparePassword("secret12", hash), true);
     assert.equal(await comparePassword("wrong-password", hash), false);
+});
+
+test("default seed credentials are valid and not double-hashed", async () => {
+    assert.deepEqual(DEFAULT_ADMIN_CREDENTIALS, {
+        name: "Admin",
+        email: "admin@test.com",
+        password: "admin123",
+    });
+    assert.equal(DEFAULT_ADMIN_CREDENTIALS.password, "admin123");
+    assert.notEqual(await hashpassword(DEFAULT_ADMIN_CREDENTIALS.password), DEFAULT_ADMIN_CREDENTIALS.password);
 });
 
 test("schemas validate data and hash passwords before save", async () => {
@@ -137,6 +150,41 @@ test("parking controllers cover listing, creation, invalid status, update, and m
     }
 });
 
+test("a user can reserve an available slot with a payment method", async () => {
+    const originalReserve = ParkingSlot.findOneAndUpdate;
+    try {
+        ParkingSlot.findOneAndUpdate = async (filter, update, options) => {
+            assert.deepEqual(filter, { _id: "slot-1", status: "available" });
+            assert.equal(update.status, "reserved");
+            assert.equal(update.is_reserved, true);
+            assert.equal(update.reserved_by, "user-1");
+            assert.equal(update.payment_method, "wallet");
+            assert.ok(update.reserved_at instanceof Date);
+            assert.deepEqual(options, { new: true, runValidators: true });
+            return { _id: "slot-1", area: "area-1", ...update };
+        };
+
+        const reserved = await invoke(reserveSlot, {
+            params: { id: "slot-1" },
+            body: { payment_method: "wallet" },
+            user: { _id: "user-1" },
+        });
+        assert.equal(reserved.res.statusCode, 200);
+        assert.equal(reserved.res.body.status, "reserved");
+
+        ParkingSlot.findOneAndUpdate = async () => null;
+        const unavailable = await invoke(reserveSlot, {
+            params: { id: "slot-1" },
+            body: { payment_method: "card" },
+            user: { _id: "user-1" },
+        });
+        assert.equal(unavailable.res.statusCode, 409);
+        assert.equal(unavailable.error.message, "This parking space is no longer available");
+    } finally {
+        ParkingSlot.findOneAndUpdate = originalReserve;
+    }
+});
+
 test("error, not-found, and database helpers handle failures", async () => {
     const castResponse = response();
     errorHandler({ name: "CastError", message: "Invalid id" }, {}, castResponse, () => {});
@@ -189,6 +237,7 @@ test("route validators reject malformed auth and parking requests", async () => 
         assert.equal((await post("/api/auth/login", { email: "invalid", password: "123" })).status, 400);
         const token = jwt.sign({ id: "507f1f77bcf86cd799439011" }, process.env.JWT_SECRET);
         assert.equal((await post("/api/parking/slots", { label: "", status: "broken" }, { authorization: `Bearer ${token}` })).status, 400);
+        assert.equal((await post("/api/parking/slots/507f1f77bcf86cd799439011/reserve", { payment_method: "card" }, { authorization: `Bearer ${token}` })).status, 400);
         const update = await fetch(`${base}/api/parking/slots/not-an-id/status`, {
             method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ status: "broken" }),
         });
@@ -196,5 +245,34 @@ test("route validators reject malformed auth and parking requests", async () => 
     } finally {
         await new Promise((resolve) => server.close(resolve));
         User.findById = originalFindById;
+    }
+});
+
+test("live dashboard is served and remains connected to backend features", async () => {
+    const frontendPath = path.join(__dirname, "..", "..", "Frontend");
+    const [html, javascript, stylesheet] = await Promise.all([
+        fs.readFile(path.join(frontendPath, "index.html"), "utf8"),
+        fs.readFile(path.join(frontendPath, "js", "dashboard.js"), "utf8"),
+        fs.readFile(path.join(frontendPath, "css", "style.css"), "utf8"),
+    ]);
+    assert.match(html, /Giza Parking/);
+    assert.match(html, /socket\.io/);
+    assert.match(stylesheet, /@media \(max-width: 720px\)/);
+    assert.match(javascript, /apiFetch\("\/areas"\)/);
+    assert.match(javascript, /apiFetch\("\/parking\/slots"\)/);
+    assert.match(javascript, /slot:updated/);
+
+    const app = express();
+    app.use(express.static(frontendPath));
+    const server = app.listen(0);
+    try {
+        const base = `http://127.0.0.1:${server.address().port}`;
+        const homepage = await fetch(`${base}/`);
+        assert.equal(homepage.status, 200);
+        assert.match(await homepage.text(), /Parking availability/);
+        assert.equal((await fetch(`${base}/css/style.css`)).status, 200);
+        assert.equal((await fetch(`${base}/js/dashboard.js`)).status, 200);
+    } finally {
+        await new Promise((resolve) => server.close(resolve));
     }
 });
