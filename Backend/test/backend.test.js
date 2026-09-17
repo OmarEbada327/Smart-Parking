@@ -256,7 +256,7 @@ test("live dashboard is served and remains connected to backend features", async
         fs.readFile(path.join(frontendPath, "js", "dashboard.js"), "utf8"),
         fs.readFile(path.join(frontendPath, "css", "style.css"), "utf8"),
     ]);
-    assert.match(html, /RAKNA/);
+    assert.match(html, /Rakna/);
     assert.match(html, /socket\.io/);
     assert.match(stylesheet, /@media \(max-width: 720px\)/);
     assert.match(javascript, /apiFetch\("\/areas"\)/);
