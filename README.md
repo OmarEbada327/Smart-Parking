@@ -1,4 +1,4 @@
-# Giza Parking Live
+# Rakna
 
 A real-time parking dashboard for managing parking zones, monitoring spaces, and reserving available slots. The application has a vanilla HTML/CSS/JavaScript frontend and an Express/MongoDB backend with Socket.IO updates.
 
