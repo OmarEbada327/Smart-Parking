@@ -132,7 +132,8 @@ test("parking controllers cover listing, creation, invalid status, update, and m
 
         ParkingSlot.findByIdAndUpdate = async (id, update, options) => {
             assert.equal(id, "slot-1");
-            assert.deepEqual(update, { status: "occupied" });
+            assert.equal(update.status, "occupied");
+            assert.ok(update.occupied_since instanceof Date);
             assert.deepEqual(options, { new: true, runValidators: true });
             return { _id: id, status: "occupied" };
         };

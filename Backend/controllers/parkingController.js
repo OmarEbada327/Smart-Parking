@@ -38,9 +38,16 @@ const updateSlotStatus = async (req, res, next) => {
             throw new Error("Status must be one of 'available', 'reserved', or 'occupied'");
         }
 
+        const update = { status };
+        if (status === "occupied") {
+            update.occupied_since = new Date();
+        } else if (status === "available") {
+            update.occupied_since = null;
+        }
+
         const slot = await ParkingSlot.findByIdAndUpdate(
             req.params.id,
-            { status },
+            update,
             { new: true, runValidators: true }
         );
 

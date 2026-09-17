@@ -1,7 +1,3 @@
-// Your server.js serves this frontend from the same origin
-// (express.static pointing at ../Frontend), so relative paths work
-// without any CORS setup. If you ever serve this frontend separately,
-// set API_BASE/SOCKET_URL to the full backend URL instead.
 const API_BASE = "/api";
 const SOCKET_URL = "";
 

@@ -20,6 +20,14 @@ function clearFieldErrors(fields) {
   });
 }
 
+function clearFieldError(field) {
+  const el = document.getElementById(`${field}Error`);
+  if (el) {
+    el.hidden = true;
+    el.textContent = "";
+  }
+}
+
 function applyFieldErrors(fieldErrors) {
   if (!Array.isArray(fieldErrors)) return;
   fieldErrors.forEach(({ field, message }) => {
@@ -66,6 +74,10 @@ function onAuthSuccess(data) {
   window.location.href = "index.html";
 }
 
+function onRegistrationSuccess() {
+  window.location.href = "login.html";
+}
+
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", (event) =>
@@ -85,7 +97,11 @@ if (registerForm) {
       fields: ["name", "email", "password"],
       request: (values) =>
         apiFetch("/auth/register", { method: "POST", body: JSON.stringify(values) }),
-      onSuccess: onAuthSuccess,
+      onSuccess: onRegistrationSuccess,
     })
   );
 }
+
+document.querySelectorAll(".auth-card .field input").forEach((input) => {
+  input.addEventListener("input", () => clearFieldError(input.name));
+});

@@ -25,6 +25,16 @@ function escapeHtml(str) {
 function statusToClass(status) {
   return String(status).toLowerCase().replace(/\s+/g, "-");
 }
+function formatSince(iso) {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
 function getAreaStats(areaId) {
   const slots = slotsByArea[areaId] || [];
   const occupied = slots.filter((slot) => slot.status === "occupied").length;
@@ -44,12 +54,6 @@ function getDynamicZoneStatus(area) {
   if (unavailable / stats.total >= 0.8) return "High Capacity";
   return "Available";
 }
-function formatSince(iso) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-
 // ---------- Header ----------
 
 function renderHeader() {
@@ -73,7 +77,7 @@ function slotRowTemplate(slot) {
       <td class="slot-label" data-label="Space"><span class="slot-marker"></span>${escapeHtml(slot.label)}</td>
       <td class="slot-sensor" data-label="Sensor">${escapeHtml(slot.sensor_id || "Not connected")}</td>
       <td data-label="Status"><span class="slot-status-pill ${statusClass}">${escapeHtml(slot.status)}</span></td>
-      <td class="slot-since" data-label="Occupied since">${since}</td>
+      <td class="slot-since" data-label="Occupied since" data-occupied-since="${slot.occupied_since || ""}">${since}</td>
       <td class="slot-actions" data-label="Action">
         ${isAdmin() ? `
         <select class="slot-select" data-slot-id="${slot._id}">
@@ -218,6 +222,12 @@ function flashRow(areaId) {
     row.classList.add("flip");
     row.addEventListener("animationend", () => row.classList.remove("flip"), { once: true });
   }
+}
+
+function refreshOccupiedTimes() {
+  zoneBoard.querySelectorAll("[data-occupied-since]").forEach((cell) => {
+    cell.textContent = formatSince(cell.dataset.occupiedSince);
+  });
 }
 
 // ---------- Data loading ----------
@@ -510,3 +520,4 @@ socket.on("area:created", () => loadAll());
 
 renderHeader();
 loadAll();
+window.setInterval(refreshOccupiedTimes, 30_000);

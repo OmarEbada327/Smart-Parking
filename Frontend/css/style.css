@@ -119,11 +119,12 @@ select {
 
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 20px;
+  padding: clamp(16px, 4vh, 32px) 20px;
   position: relative;
   overflow: hidden;
 }
@@ -158,7 +159,7 @@ select {
   background: var(--asphalt-800);
   border: 1px solid var(--asphalt-700);
   border-radius: var(--radius-lg);
-  padding: 42px 38px;
+  padding: clamp(30px, 5vh, 42px) 38px;
   box-shadow: var(--shadow-lg);
   animation: rise-in 0.35s ease;
 }
@@ -282,6 +283,21 @@ select {
   background: rgba(217, 83, 79, 0.15);
   border-color: rgba(217, 83, 79, 0.3);
   color: #f0918e;
+}
+
+.form-msg:not([hidden]) {
+  animation: message-in 0.24s ease-out;
+}
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-switch {
@@ -962,6 +978,21 @@ tr:has(.slot-status-pill.occupied) .slot-marker { background: rgba(239, 107, 115
 
 .payment-details[hidden] { display: none; }
 
+.payment-details:not([hidden]) {
+  animation: payment-details-in 0.22s ease-out;
+}
+
+@keyframes payment-details-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .payment-details .field:last-child { margin-bottom: 0; }
 
 .payment-hint {
@@ -1052,6 +1083,11 @@ tr:has(.slot-status-pill.occupied) .slot-marker { background: rgba(239, 107, 115
   .modal-backdrop {
     animation: none;
   }
+
+  .form-msg:not([hidden]),
+  .payment-details:not([hidden]) {
+    animation: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1095,4 +1131,26 @@ tr:has(.slot-status-pill.occupied) .slot-marker { background: rgba(239, 107, 115
   }
 
   .overview-card { min-height: 92px; padding: 15px; }
+}
+
+/* Keep every register action reachable when validation feedback expands the form. */
+@media (max-height: 680px) {
+  .auth-page {
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-block: 10px;
+  }
+
+  .auth-card {
+    flex-shrink: 0;
+    padding: 20px 38px;
+  }
+
+  .brand { margin-bottom: 16px; }
+  .auth-card p.lead { margin-bottom: 14px; }
+  .field { margin-bottom: 10px; }
+  .field-error { margin-top: 3px; line-height: 1.35; }
+  .auth-switch { margin-top: 14px; }
 }
